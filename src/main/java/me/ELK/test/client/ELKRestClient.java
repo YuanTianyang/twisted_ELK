@@ -22,32 +22,32 @@ public class ELKRestClient {
 			
 			if (isDefault) {
 				
-				//Ä¬ÈÏ¿Í»§¶Ë
+				//é»˜è®¤å®¢æˆ·ç«¯
 				restClient = RestClient.builder(httpHost).build();
 				
 			}else {
 				
-				//¿Í»§¶Ë½¨ÔìÕß,¿ÉÉèÖÃÄ¬ÈÏ²ÎÊı
+				//å®¢æˆ·ç«¯å»ºé€ è€…,å¯è®¾ç½®é»˜è®¤å‚æ•°
 				restClientBuilder = RestClient.builder(httpHost);
 				
-				//ÎªÃ¿¸öÇëÇóÉèÖÃÄ¬ÈÏµÄ±êÍ·,ÒÔ·ÀÖ¹ÇëÇó±ØĞëÒªÖ¸¶¨ÇëÇóÍ·
+				//ä¸ºæ¯ä¸ªè¯·æ±‚è®¾ç½®é»˜è®¤çš„æ ‡å¤´,ä»¥é˜²æ­¢è¯·æ±‚å¿…é¡»è¦æŒ‡å®šè¯·æ±‚å¤´
 				Header[] defaultHeaders = new Header[]{new BasicHeader("header", "Twisted")};
 				restClientBuilder.setDefaultHeaders(defaultHeaders);
 				
-				//ÉèÖÃÓ¦¸Ã±»ÊÚÓèµÄ³¬Ê±Ê±¼ä£¬ÒÔ±ã¶ÔÏàÍ¬µÄÇëÇó½øĞĞ¶à´Î³¢ÊÔ¡£Ä¬ÈÏÊ±¼äÓësocket³¬Ê±ÏàÍ¬£¬¾ùÎª30Ãë¡£Èç¹ûsocketÁ¬½ÓÊ½×Ô¶¨ÒåµÄ£¬ÔòÓ¦¸ÃÏàÓ¦µÄµ÷Õû×î´óÖØÊÔ³¬Ê±
+				//è®¾ç½®åº”è¯¥è¢«æˆäºˆçš„è¶…æ—¶æ—¶é—´ï¼Œä»¥ä¾¿å¯¹ç›¸åŒçš„è¯·æ±‚è¿›è¡Œå¤šæ¬¡å°è¯•ã€‚é»˜è®¤æ—¶é—´ä¸socketè¶…æ—¶ç›¸åŒï¼Œå‡ä¸º30ç§’ã€‚å¦‚æœsocketè¿æ¥å¼è‡ªå®šä¹‰çš„ï¼Œåˆ™åº”è¯¥ç›¸åº”çš„è°ƒæ•´æœ€å¤§é‡è¯•è¶…æ—¶
 				restClientBuilder.setMaxRetryTimeoutMillis(10000);
 				
-				//ÉèÖÃÒ»¸ö¼àÌıÆ÷£¬ÔÚ½ÚµãÊ§°ÜµÄÊ±ºò¾Í»áµÃµ½Í¨Öª£¬ÒÔ±ã²ÉÈ¡ÏàÓ¦µÄĞĞ¶¯¡£ÔÚ¶Ô¹ÊÕÏĞáÌ½Ê±¿ÉÔÚÄÚ²¿Ê¹ÓÃ¡£
+				//è®¾ç½®ä¸€ä¸ªç›‘å¬å™¨ï¼Œåœ¨èŠ‚ç‚¹å¤±è´¥çš„æ—¶å€™å°±ä¼šå¾—åˆ°é€šçŸ¥ï¼Œä»¥ä¾¿é‡‡å–ç›¸åº”çš„è¡ŒåŠ¨ã€‚åœ¨å¯¹æ•…éšœå—…æ¢æ—¶å¯åœ¨å†…éƒ¨ä½¿ç”¨ã€‚
 				restClientBuilder.setFailureListener(new RestClient.FailureListener(){
 					
 					public void onFailure(HttpHost host){
 						System.out
-						.println("ELKRestClient.main(...).new FailureListener() {...}.onFailure()--------¶Ë¿ÚºÅ:-------"+host+"´íÎó");
+						.println("ELKRestClient.main(...).new FailureListener() {...}.onFailure()--------ç«¯å£å·:-------"+host+"é”™è¯¯");
 					}
 					
 				});
 				
-				//ÉèÖÃ»Øµ÷£¬ÔÊĞíĞŞ¸ÄÄ¬ÈÏµÄÇëÇóÅäÖÃ£¨ÀıÈçÇëÇó³¬Ê±¡¢Éí·İÑéÖ¤£¬»òorg.apache.http.client.config.RequestConfig.BuilderÀàÔÊĞíÉèÖÃµÄ²ÎÊı£©
+				//è®¾ç½®å›è°ƒï¼Œå…è®¸ä¿®æ”¹é»˜è®¤çš„è¯·æ±‚é…ç½®ï¼ˆä¾‹å¦‚è¯·æ±‚è¶…æ—¶ã€èº«ä»½éªŒè¯ï¼Œæˆ–org.apache.http.client.config.RequestConfig.Builderç±»å…è®¸è®¾ç½®çš„å‚æ•°ï¼‰
 				restClientBuilder.setRequestConfigCallback(new RestClientBuilder.RequestConfigCallback() {
 					
 					public Builder customizeRequestConfig(Builder builder) {
@@ -56,7 +56,7 @@ public class ELKRestClient {
 					
 				});
 				
-				//ÉèÖÃ»Øµ÷£¬ÔÊĞíĞŞ¸Ähttp¿Í»§¶ËµÄÅäÖÃ£¨ÀıÈçÍ¨¹ıssl¼ÓÃÜÍ¨ĞÅ£¬»òorg.apache.http.impl.nio.client.HttpAsyncClientBuilderÀàÔÊĞíÉèÖÃµÄ²ÎÊı£©
+				//è®¾ç½®å›è°ƒï¼Œå…è®¸ä¿®æ”¹httpå®¢æˆ·ç«¯çš„é…ç½®ï¼ˆä¾‹å¦‚é€šè¿‡sslåŠ å¯†é€šä¿¡ï¼Œæˆ–org.apache.http.impl.nio.client.HttpAsyncClientBuilderç±»å…è®¸è®¾ç½®çš„å‚æ•°ï¼‰
 				restClientBuilder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
 					
 					public HttpAsyncClientBuilder customizeHttpClient(

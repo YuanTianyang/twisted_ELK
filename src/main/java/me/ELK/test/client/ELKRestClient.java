@@ -1,14 +1,25 @@
 package me.ELK.test.client;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.client.config.RequestConfig.Builder;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.nio.entity.NStringEntity;
+import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
+import org.elasticsearch.client.HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+
 
 public class ELKRestClient {
 
@@ -74,6 +85,136 @@ public class ELKRestClient {
 
 			e.printStackTrace();
 			
+		}
+		
+		return restClient;
+		
+	}
+	
+	/*
+	 * 一旦RestClient被创建后，就可以通过调用performRequest或者是performRequestAsyns方法来发送请求。
+	 * performRequest方法是同步的并直接返回Response，这意味着客户端会阻塞并等待一个response返回。
+	 * performRequestAsync方法返回void并接受一个ResponseListener作为额外的参数，这意味着他们是异步执行的。当请求完成或失败时都会通知这个listener。
+	 */
+	@SuppressWarnings("unused")
+	public void performRequest(RestClient restClient){
+		
+		Response response = null;
+		
+		try {
+			
+			//通过提供HTTP方法和资源路径来发送请求（这是最少的必传参数集）
+			response = restClient.performRequest("GET", "/");
+			
+			//通过提供HTTP方法、资源路径、查询参数来发送请求
+			Map<String, String> params = Collections.singletonMap("pretty", "true");
+			response = restClient.performRequest("GET", "/", params);
+			
+			//通过提供HTTP方法、资源路径、可选的查询参数、封装了请求体的 org.apache.http.HttpEntity对象来发送请求
+			//HttpEntity指定的ContentType非常重要，因为它会被用来设置Content-Type头，以便Elasticsearch能正确地解析内容
+			Map<String, String> emptyParams = Collections.emptyMap();
+			String jsonString = "{" +
+						            "\"user\":\"kimchy\"," +
+						            "\"postDate\":\"2013-01-30\"," +
+						            "\"message\":\"trying out Elasticsearch\"" +
+						        "}";
+			HttpEntity entity = new NStringEntity(jsonString,ContentType.APPLICATION_JSON);
+			response = restClient.performRequest("PUT", "/posts/doc/1", emptyParams, entity);
+			
+			/*
+			 * 通过提供HTTP方法、资源路径、可选的查询参数、可选的请求体、可选的消费者工厂，用来为每次请求创建一个org.apache.http.nio.protocol.HttpAsyncResponseConsumer回调实例.
+			 * 控制相应体如何从客户端的非阻塞HTTP连接中传输。当未提供时，将使用堆内存中默认的缓冲实现，高达100MB。
+			 */
+			Map<String, String> emptyParams2 = Collections.emptyMap();
+			HttpAsyncResponseConsumerFactory httpAsyncResponseConsumerFactory = 
+					new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(30*1024*1024); 
+			response = restClient.performRequest("GET", "/posts/_search", params, null, httpAsyncResponseConsumerFactory);
+			
+			//---------------------------以下为异步方式----------------------------------------------//
+			/*
+			 * 定义请求成功时相应的处理
+			 * 定义请求失败时相应的处理，意味着出现连接错误或者是返回错误状态码的响应。
+			 * 提供HTTP方法、资源路径和响应监听器发送一个异步请求，请求完成时，监听器将会被通知。（这是最少的必传参数集）
+			 */
+			ResponseListener responseListener = new ResponseListener() {
+				
+				public void onSuccess(Response response) {
+					
+					System.out.println("成功时的相应处理");
+					
+				}
+				
+				public void onFailure(Exception exception) {
+					
+					exception.printStackTrace();
+					System.out.println("失败时的相应处理");
+					
+				}
+				
+			};
+			restClient.performRequestAsync("GET", "/", responseListener);
+			
+			//通过提供HTTP方法、资源路径、可选的查询参数和响应监听器发送一个异步请求。请求体封装在一个 org.apache.http.HttpEntity对象中，并且请求完成时会通知响应监听器。
+			String jsonString2 = "{" +
+						            "\"user\":\"kimchy\"," +
+						            "\"postDate\":\"2013-01-30\"," +
+						            "\"message\":\"trying out Elasticsearch\"" +
+						        "}"; 
+			HttpEntity entity2 = new NStringEntity(jsonString2,ContentType.APPLICATION_JSON);
+			restClient.performRequestAsync("PUT", "/posts/doc/1", params, entity2, responseListener);
+			
+			/*
+			 * 通过提供HTTP方法、资源路径、可选的查询参数、可选的请求体、可选的消费者工厂，用来为每次异步的请求创建一个org.apache.http.nio.protocol.HttpAsyncResponseConsumer回调实例.
+			 * 控制相应体如何从客户端的非阻塞HTTP连接中传输。当未提供时，将使用堆内存中整个默认的缓冲实现，高达100MB。
+			 */
+			HeapBufferedResponseConsumerFactory heapBufferedResponseConsumerFactory = 
+					new HeapBufferedResponseConsumerFactory(30*1024*1024);
+			restClient.performRequestAsync("GET", "/posts/_search", params, null, heapBufferedResponseConsumerFactory,responseListener);
+			
+			
+			//---------------------如何发送异步请求的基本示例-------------------------//
+			HttpEntity[] documents = new HttpEntity[1000];
+			
+			final CountDownLatch latch = new CountDownLatch(documents.length);
+			for (int i = 0; i < documents.length; i++) {
+			    restClient.performRequestAsync(
+			            "PUT",
+			            "/posts/doc/" + i,
+			            Collections.<String, String>emptyMap(),
+			            documents[i],
+			            new ResponseListener() {
+			            	
+			                public void onSuccess(Response response) {
+			                    
+			                	//对返回的响应做出相应的处理
+			                    latch.countDown();
+			                }
+
+			                public void onFailure(Exception exception) {
+			                    
+			                	//对由于通信错误或表示错误的响应状态码返回的异常做出响应的处理
+			                    latch.countDown();
+			                }
+			                
+			            }
+			    );
+			}
+			try {
+				latch.await();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			//通过提供HTTP方法、资源路径、响应监听器和长度可变的Header参数来发送一个异步请求
+			Header[] headers = {
+					new BasicHeader("header1", "value1"),
+					new	BasicHeader("header2", "value2")
+			};
+			restClient.performRequestAsync("GET", "/", responseListener, headers);
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} finally {
 			try {
 				restClient.close();
@@ -81,8 +222,6 @@ public class ELKRestClient {
 				e.printStackTrace();
 			}
 		}
-		
-		return restClient;
 		
 	}
 	

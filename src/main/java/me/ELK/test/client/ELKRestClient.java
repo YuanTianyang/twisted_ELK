@@ -8,17 +8,27 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
+import org.apache.http.ParseException;
+import org.apache.http.RequestLine;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.nio.entity.NStringEntity;
+import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+
+import com.sun.xml.internal.stream.Entity;
 
 
 public class ELKRestClient {
@@ -62,7 +72,8 @@ public class ELKRestClient {
 				restClientBuilder.setRequestConfigCallback(new RestClientBuilder.RequestConfigCallback() {
 					
 					public Builder customizeRequestConfig(Builder builder) {
-						return builder.setSocketTimeout(10000);
+						return builder.setConnectTimeout(5000)
+								.setSocketTimeout(10000);
 					}
 					
 				});
@@ -72,10 +83,25 @@ public class ELKRestClient {
 					
 					public HttpAsyncClientBuilder customizeHttpClient(
 							HttpAsyncClientBuilder httpAsyncClientBuilder) {
-						return httpAsyncClientBuilder.setProxy(new HttpHost("proxy",9000,"http"));
+						return httpAsyncClientBuilder.setProxy(new HttpHost("proxy",9000,"http"))
+								.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
 					}
 					
 				});
+				
+				final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+				credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials("Twisted", "4495346"));
+				restClientBuilder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
+					
+					@Override
+					public HttpAsyncClientBuilder customizeHttpClient(
+							HttpAsyncClientBuilder httpClientBuilder) {
+						// TODO Auto-generated method stub
+						return null;
+					}
+				})
+				
+				
 				
 				restClient = restClientBuilder.build();
 				
@@ -97,7 +123,7 @@ public class ELKRestClient {
 	 * performRequestAsync方法返回void并接受一个ResponseListener作为额外的参数，这意味着他们是异步执行的。当请求完成或失败时都会通知这个listener。
 	 */
 	@SuppressWarnings("unused")
-	public void performRequest(RestClient restClient){
+	public void performingRequest(RestClient restClient){
 		
 		Response response = null;
 		
@@ -221,6 +247,29 @@ public class ELKRestClient {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
+		
+	}
+	
+	public void readingResponses(Response response){
+		
+		//执行请求的相关信息
+		RequestLine requestLine = response.getRequestLine();
+		//返回响应的主机
+		HttpHost host = response.getHost();
+		//返回响应行，你可以从中检索状态码
+		int statusCode = response.getStatusLine().getStatusCode();
+		//响应头，也可以通过getHeader(String)来检索
+		Header[] headers = response.getHeaders();
+		//返回体封装在org.apache.http.HttpEntity对象中
+		try {
+			String responseBody = EntityUtils.toString(response.getEntity());
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 	}

@@ -41,7 +41,7 @@ import org.elasticsearch.client.sniff.Sniffer;
 
 public class ELKRestClient {
 
-	public RestClient getRestClient(Boolean isDefault,HttpHost httpHost){
+	public RestClient getLowRestClient(Boolean isDefault,HttpHost httpHost){
 		
 		RestClient restClient = null;
 		
@@ -364,7 +364,7 @@ public class ELKRestClient {
 		
 		ELKRestClient elkRestClient = new ELKRestClient();
 		
-		RestClient restClient = elkRestClient.getRestClient(false, httpHost);
+		RestClient restClient = elkRestClient.getLowRestClient(false, httpHost);
 		
 	}
 	
